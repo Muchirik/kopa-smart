@@ -16,5 +16,14 @@
   "bugs": {
     "url": "https://github.com/Muchirik/lipa-pole-pole/issues"
   },
-  "homepage": "https://github.com/Muchirik/lipa-pole-pole#readme"
+  "homepage": "https://github.com/Muchirik/lipa-pole-pole#readme",
+  "dependencies": {
+    "africastalking": "^0.7.3",
+    "axios": "^1.9.0",
+    "body-parser": "^2.2.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.4.0",
+    "moment": "^2.30.1"
+  }
 }
