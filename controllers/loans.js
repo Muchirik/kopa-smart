@@ -1,6 +1,6 @@
 //loan management
 
-const db = require('../consfig/firebase');
+const db = require('../config/firebase');
 const { getAuthToken } = require('../config/daraja');
 const moment = require('moment');
 
@@ -13,7 +13,7 @@ class LoanController {
             amount,
             originalAmount: amount,
             dueDate: moment(dueDate).toISOString(),
-            atatus: 'active',
+            status: 'active',
             createdDate: moment().toISOString()
         });
 

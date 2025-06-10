@@ -1,6 +1,6 @@
 //ussd integration
 
-const LoanController = require('./loans');
+const LoanController = require('../controllers/loans');
 const { sendSMS } = require('../services/sms');
 
 class USSDController {
@@ -14,7 +14,7 @@ class USSDController {
         }
         else if (inputs[1] === '1') {
             //Loan request flow
-            const amount = [2];
+            const amount = inputs[2];
             const vendorPhone = inputs[3];
             const dueDate = moment().add(7, 'days').format('YYYY-MM-DD')
 
