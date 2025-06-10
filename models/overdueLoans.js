@@ -41,6 +41,20 @@ const getOverdueLoans = async () => {
     console.log(
       `Late fee of Ksh ${lateFee} applied to loan ID: ${loan.id}, new balance: Ksh ${loan.amount + lateFee}`
     );
+    console.log(
+      `Sms sent to ${loan.borrowerPhone} for Overdue loan ID: ${loan.id} fee of Ksh ${lateFee}`
+    );
+  }
+
+  try {
+    // Send a summary SMS to the vendor
+    const vendorPhone = overdueLoans[0].vendorPhone; // Assuming all loans have the same vendor
+    await sendSMS(
+      vendorPhone,
+      `There are ${overdueLoans.length} overdue loans. Please check your dashboard for details.`
+    );
+  } catch (error) {
+    console.error("Error sending SMS to vendor:", error);
   }
 
   // Return the list of overdue loans

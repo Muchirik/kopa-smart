@@ -57,7 +57,7 @@ router.post('/mpesa/callback', async (req, res) => {
   }
     catch (error) {
         console.error("Error processing M-Pesa callback:", error);
-        // Handle any errors that occur during processing
+        
         res.status(500).json({ error: "Internal Server Error" });
         return;
     }
