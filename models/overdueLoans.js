@@ -31,12 +31,15 @@ const getOverdueLoans = async () => {
     );
   });
 
-  // Apply late fee and send SMS for each overdue loan
+  // Apply late fee
   for (const loan of overdueLoans) {
     const lateFee = await LoanController.applyLateFee(loan.id);
-    await sendSMS(
-      loan.borrowerPhone,
-      `Your loan balance is now Ksh ${loan.amount + lateFee} due to late fees`
+    // await sendSMS(
+    //   loan.borrowerPhone,
+    //   `Your loan balance is now Ksh ${loan.amount + lateFee} due to late fees`
+    // );//  already done in cron job
+    console.log(
+      `Late fee of Ksh ${lateFee} applied to loan ID: ${loan.id}, new balance: Ksh ${loan.amount + lateFee}`
     );
   }
 
