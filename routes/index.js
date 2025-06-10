@@ -1,5 +1,3 @@
-//USSD Endpoint
-
 const express = require('express');
 const USSDController = require('../controllers/ussd');
 const router = express.Router();
@@ -30,7 +28,7 @@ router.post('/mpesa/callback', async (req, res) => {
   });
   try  {
     // Process the callback data as needed
-    // For example, you can update the loan status or notify the user
+    // For example, update the loan status or notify the user
     const { Body } = req.body;
     if (Body && Body.stkCallback) {
       const { ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
@@ -48,7 +46,7 @@ router.post('/mpesa/callback', async (req, res) => {
           updatedDate: Timestamp.now(),
         });
 
-        // You send an SMS notification to the user
+        // Send an SMS notification to the user
         await sendSMS(phoneNumber, `Payment of Ksh ${amount} received successfully.`);
       } else {
         console.error(`Payment failed: ${ResultDesc}`);
@@ -70,4 +68,3 @@ router.post('/mpesa/callback', async (req, res) => {
 })
 
 module.exports = router;
-// Export the router to be used in the main app
