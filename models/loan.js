@@ -7,7 +7,7 @@ const { getOverdueLoans } = require('../models/overdueLoans');
 // This cron job runs daily at 9 AM to check for overdue loans, apply late fees, and notify borrowers via SMS.
 
 cron.schedule("0 9 * * *", async () => {
-  const overdueLoans = await getOverdueLoans(); //need to implement this function
+  const overdueLoans = await getOverdueLoans();
 
   for (const loan of overdueLoans) {
     const lateFee = await LoanController.applyLateFee(loan.id);

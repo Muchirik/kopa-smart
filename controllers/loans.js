@@ -7,12 +7,13 @@ const moment = require('moment');
 class LoanController {
     async applyLateFee(loanId) {
         const loanRef = db.collection('loans').doc(loanId);
+        if (daysLate <= 0 ) return 0; // No late fee if not overdue
         const loan = (await loanRef.get()).data();
         const daysLate = moment().diff(moment(loan.dueDate), 'days');
         const lateFee = loan.originalAmount * 0.05 * daysLate;
 
         //calculate 1% of the original amount will change later to 1% of late fee
-        const commission = lateFee * 0.02; // 1% of 5% is 0.05 * 0.02 = 0.01 of the originalAmount per day
+        const commission = lateFee * 0.01; // 1% of 5% is 0.05 * 0.02 = 0.01 of the originalAmount per day
 
         await loanRef.update({
             amount: loan.originalAmount +  lateFee,
