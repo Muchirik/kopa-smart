@@ -41,7 +41,7 @@ const initiateSTKPush = async (phone, amount, accountReference) => {
             Timestamp: timestamp,
             TransactionType: 'CustomerPayBillOnline',
             Amount: amount,
-            PartyA: phone,
+            PartyA: formattedPhone, // Ensure phone number is in the correct format
             PartyB: '174379',
             PhoneNumber: phone,
             CallBackURL: 'https://your-calllback-url.com', // Replace with actual callback URL
