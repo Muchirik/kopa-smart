@@ -6,8 +6,22 @@ const moment = require("moment");
 const { sendSMS } = require("../services/sms");
 const bcrypt = require("bcrypt");
 
+const {
+    isValidPhone,
+    isValidIdNumber,
+    isValidPin,
+    isValidAmount,
+    isValidPeriod,
+    normalizePhone,
+} = require("../helpers/validationHelper");
+
 class LoanController {
     async registerLender(idNumber, phone, paymentMode, businessName, pin) {
+        if (!isValidIdNumber(idNumber)) throw new Error("Invalid ID number");
+        if (!isValidPhone(phone)) throw new Error("Invalid phone number");
+        if (!isValidPin(pin)) throw new Error("Invalid pin");
+        
+
         const hashedPin = await bcrypt.hash(pin, 10);
         await db.collection("users").doc(phone).set({
             idNumber,
@@ -21,6 +35,10 @@ class LoanController {
     }
 
     async registerBorrower(phone, idNumber, pin) {
+        if (!isValidIdNumber(idNumber)) throw new Error("Invalid ID number.");
+        if (!isValidPhone(phone)) throw new Error("Invalid phone number.");
+        if (!isValidPin(pin)) throw new Error("Invalid pin");
+        
         const hashedPin = await bcrypt.hash(pin, 10);
         await db.collection("users").doc(phone).set({
             idNumber,
