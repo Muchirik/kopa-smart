@@ -197,7 +197,6 @@ class USSDController {
       // response = "END Loan request sent to vendor.";
       //   }
 
-
       // View Loans (vendor 4, buyer: 3)
       else if (
         (inputs[4] === "4" && step === 5) || // Vendor
@@ -205,15 +204,13 @@ class USSDController {
       ) {
         const userIdOrPhone = inputs[2];
         // Show all loans except cancelled/rejected
-        const loans = await LoanController.getLoansByUser(userIdOrPhone,
-            [
-                "active",
-                "late",
-                "pending_borrower_confirmation",
-                "pending_vendor_confirmation",
-                "paid"
-            ]
-        );
+        const loans = await LoanController.getLoansByUser(userIdOrPhone, [
+          "active",
+          "late",
+          "pending_borrower_confirmation",
+          "pending_vendor_confirmation",
+          "paid",
+        ]);
         if (!loans.length) {
           response = "END No loans found for your account.";
         } else {
@@ -228,17 +225,17 @@ class USSDController {
       }
       // View Loan Details
       else if (
-        ((inputs[4] === "4" && step === 6) && inputs[1] === "1") || // Vendor
-        ((inputs[4] === "3" && step === 6) && inputs[1] === "1") // Buyer
+        (inputs[4] === "4" && step === 6 && inputs[1] === "1") || // Vendor
+        (inputs[4] === "3" && step === 6 && inputs[1] === "1") // Buyer
       ) {
         const userIdOrPhone = inputs[2];
         const loanIndex = Number(inputs[5]) - 1;
         const loans = await LoanController.getLoansByUser(userIdOrPhone, [
-            "active",
-            "late",
-            "pending_borrower_confirmation",
-            "pending_vendor_confirmation",
-            "paid"
+          "active",
+          "late",
+          "pending_borrower_confirmation",
+          "pending_vendor_confirmation",
+          "paid",
         ]);
         if (!loans[loanIndex]) {
           response = "END Invalid loan selection.";
@@ -255,18 +252,21 @@ class USSDController {
       }
       // Handle Repayment from loan details
       else if (
-        (user.type === "vendor" &&
-          inputs[4] === "4" &&
+        (inputs[4] === "4" &&
           step === 7 &&
-          inputs[6] === "1") ||
-        (user.type === "buyer" &&
-          inputs[4] === "3" &&
+          inputs[6] === "1" &&
+          inputs[1] === "1") || // vendor
+        (inputs[4] === "3" &&
           step === 7 &&
-          inputs[6] === "1")
+          inputs[6] === "1" &&
+          inputs[1] === "1") // Buyer
       ) {
         const userIdOrPhone = inputs[2];
-        const loans = await LoanController.getLoansByUser(userIdOrPhone);
         const loanIndex = Number(inputs[5]) - 1;
+        const loans = await LoanController.getLoansByUser(userIdOrPhone, [
+            "active",
+            "late"
+        ]);
         if (!loans[loanIndex]) {
           response = "END Invalid loan selection.";
         } else {
@@ -280,20 +280,26 @@ class USSDController {
           response = `END Payment of Ksh ${loan.amount} initiated. Complete on your M-Pesa app.`;
         }
       }
-      // Handle Back Option from loans list
+      // Handle Back Option from Loan Details
       else if (
-        (user.type === "vendor" &&
-          inputs[4] === "4" &&
+        (
+            ((inputs[4] === "4" &&
+            step === 7 &&
+            inputs[6] === "2") && inputs[1] === "1") || // Vendor
+        ((inputs[4] === "3" &&
           step === 7 &&
-          inputs[6] === "2") ||
-        (user.type === "buyer" &&
-          inputs[4] === "3" &&
-          step === 7 &&
-          inputs[6] === "2")
+          inputs[6] === "2") && inputs[1] === "1") // Buyer
+        )
       ) {
         // Go back to loans list
         const userIdOrPhone = inputs[2];
-        const loans = await LoanController.getLoansByUser(userIdOrPhone);
+        const loans = await LoanController.getLoansByUser(userIdOrPhone, [
+            "active",
+            "late",
+            "pending_borrower_confirmation",
+            "pending_vendor_confirmation",
+            "paid"
+        ]);
         response = "CON Your loans:\n";
         loans.forEach((loan, index) => {
           response += `${index + 1}. Ksh ${loan.amount} - Due: ${moment(
@@ -302,10 +308,41 @@ class USSDController {
         });
         response += "Reply with the number to view details.";
       }
-      // send sms  for END responses
-      if (response.startsWith("END")) {
-        await sendSMS(phoneNumber, response.replace("END", ""));
+
+      // Loan Confirmation via USSD (borrower or vendor)
+      else if (
+        step === 5 &&
+        inputs[1] === "1" &&
+        inputs[2] &&
+        (inputs[3] === "1" || inputs[3] === "2")
+      ) {
+        // *123*loanId*1# or *123*loanId*2#
+        const loanId = inputs[2];
+        const confirm = inputs[3] === "1";
+        // Try borrower confirmation first
+        try {
+            const result  = await LoanController.confirmLoan(loanId, phoneNumber, confirm);
+            response = `END ${result}`;
+        } catch (err) {
+            // If not borrower, try vendor confirmation
+            try {
+                const result = await LoanController.vendorConfirmLoan(loanId, phoneNumber, confirm);
+                response = `END ${result}`;
+            } catch (err2) {
+                response = "END Invalid confirmation or unauthorized.";
+            }
+        }
       }
+      else {
+        response = "END Invalid input. Please try again.";
+      }
+
+      // Send SMS for END responses
+      if (response.startsWith("END")) {
+        await sendSMS(phoneNumber, response.replace("END", "").trim());
+      }
+
+      return response;
     }
   }
 }
