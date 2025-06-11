@@ -65,8 +65,6 @@ class USSDController {
           const phone = inputs[3];
           const idNumber = inputs[4];
           const pin = inputs[5];
-          // TODO: Hash PIN before  saving
-          //   const type = "buyer";
 
           await LoanController.registerBorrower(phone, idNumber, pin);
           response = "END Registration successful. Welcome to Lipa Pole Pole!";
@@ -287,7 +285,7 @@ class USSDController {
           await LoanController.initiateSTKPush(
             phoneNumber,
             loan.amount,
-            `Repayment for Loan ID: ${loan.loanId}`
+            `Repayment for Loan ID: ${loan.id}`
           );
           response = `END Payment of Ksh ${loan.amount} initiated. Complete on your M-Pesa app.`;
         }
