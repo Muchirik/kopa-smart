@@ -141,16 +141,19 @@ class USSDController {
         }. Awaiting confirmation.`;
       }
       // vendor repay loan
-      else if (inputs[4] === "3" && step === 5) {
-        //List loans to repay
+      else if (
+        ((inputs[4] === "3" && step === 5) && inputs[1] === "1") || //Vendor: Repay Loan
+        ((inputs[4] === "2" && step ===5) && inputs[1] === "1") // Buyer: Repay Loan
+    ) {
         const userIdOrPhone = inputs[2];
-        const loans = await LoanController.getLoansByUser(userIdOrPhone);
+        // only show loans that are active or late
+        const loans = await LoanController.getLoansByUser(userIdOrPhone, ["active", "late"]);
         if (!loans.length) {
           response = "END No loans to repay.";
         } else {
           response = "CON Select loan to repay\n";
           loans.forEach((loan, i) => {
-            response += `${i + 1}. ${loans.id} ksh${loan.amount} Due:${moment(
+            response += `${i + 1}. Ksh ${loan.amount} - Due:${moment(
               loan.dueDate
             ).format("YYYY-MM-DD")}\n`;
           });
