@@ -1,93 +1,167 @@
 //loan management
-const { initiateSTKPush } = require('../services/mpesa');
-const db = require('../config/firebase');
-const { getAuthToken } = require('../config/daraja');
-const moment = require('moment');
-const { sendSMS } = require('../services/sms');
+const { initiateSTKPush } = require("../services/mpesa");
+const db = require("../config/firebase");
+const { getAuthToken } = require("../config/daraja");
+const moment = require("moment");
+const { sendSMS } = require("../services/sms");
 
 class LoanController {
-    async applyLateFee(loanId) {
-        const loanRef = db.collection('loans').doc(loanId);
-        if (daysLate <= 0 ) return 0; // No late fee if not overdue
-        const loan = (await loanRef.get()).data();
-        const daysLate = moment().diff(moment(loan.dueDate), 'days');
-        const lateFee = loan.originalAmount * 0.05 * daysLate;
+  async applyLateFee(loanId) {
+    const loanRef = db.collection("loans").doc(loanId);
+    const loan = (await loanRef.get()).data();
+    const daysLate = moment().diff(moment(loan.dueDate), "days");
 
-        //calculate 1% of the original amount will change later to 1% of late fee
-        const commission = lateFee * 0.01; // 1% of 5% is 0.05 * 0.02 = 0.01 of the originalAmount per day
+    if (daysLate <= 0) return 0; // No late fee if not overdue
 
-        await loanRef.update({
-            amount: loan.originalAmount +  lateFee,
-            lateFeeApplied: true,
-            commission: commission,
-            status: 'late',
-            updatedDate: moment().toISOString()
-        })
+    const lateFee = loan.originalAmount * 0.05 * daysLate;
 
-        //send commission to ken
-        if (commission > 0) {
-            await initiateSTKPush('0706219989', Math.round(commission), `commission for loan ${loanId}`);
-        }
-        return lateFee;
+    //calculate 1% of late fee
+    const commission = lateFee * 0.01; // 1% of 5% is 0.05 * 0.02 = 0.01 of the originalAmount per day
+
+    await loanRef.update({
+      amount: loan.originalAmount + lateFee,
+      lateFeeApplied: true,
+      commission: commission,
+      status: "late",
+      updatedDate: moment().toISOString(),
+    });
+
+    //send commission to ken
+    if (commission > 0) {
+      await initiateSTKPush(
+        "0706219989",
+        Math.round(commission),
+        `commission for loan ${loanId}`
+      );
     }
+    return lateFee;
+  }
 
+  async createLoan(vendorPhone, borrowerPhone, amount, dueDate) {
+    const loanRef = db.collection("loans").doc();
+    loanId = loanRef.id;
+    await loanRef.set({
+      vendorPhone,
+      borrowerPhone,
+      amount,
+      originalAmount: amount,
+      dueDate: moment(dueDate).toISOString(),
+      status: "pending_borrower_confirmation",
+      createdDate: moment().toISOString(),
+    });
+    //send sms to borrower to confirm
+    await sendSMS(
+      borrowerPhone,
+      `You have a loan offer of Ksh ${amount} due on ${moment(dueDate).format(
+        "YYYY-MM-DD"
+      )} from vendor ${vendorPhone}. Reply with *123*${loanId}*1# to accept or *123*${loanId}*2# to reject.`
+    );
 
-    async createLoan(vendorPhone, borrowerPhone, amount, dueDate) {
-        const loanRef = db.collection('loans').doc();
-        loanId = loanRef.id;
-        await loanRef.set({
-            vendorPhone,
-            borrowerPhone,
-            amount,
-            originalAmount: amount,
-            dueDate: moment(dueDate).toISOString(),
-            status: 'pending_borrower_confirmation',
-            createdDate: moment().toISOString()
-        });
-        //send sms to borrower to confirm
-        await sendSMS(
-            borrowerPhone,
-            `You have a loan offer of Ksh ${amount} due on ${moment(dueDate).format('YYYY-MM-DD')} from vendor ${vendorPhone}. Reply with *123*${loanId}*1# to accept or *123*${loanId}*2# to reject.`
-        );
+    return loanId;
+  }
 
-        return loanId;
+  // prompt buyer to confrim loan
+  async confirmLoan(loanId, borrowerPhone, confirm) {
+    const loanRef = db.collection("loans").doc(loanId);
+    const loanDoc = await loanRef.get();
+    if (!loanDoc.exists) throw new Error("Loan not found");
+    const loan = loanDoc.data();
+
+    if (loan.borrowerPhone !== borrowerPhone) throw new Error("Unauthorized");
+
+    if (confirm) {
+      await loanRef.update({
+        status: "active",
+        confirmedDate: moment.toISOString(),
+      });
+      // Notify vendor
+      await sendSMS(
+        loan.vendorPhone,
+        `Borrower ${borrowerPhone} has accepted the loan offer for ${loan.amount}.`
+      );
+      return "Loan Confirmed";
+    } else {
+      await loanRef.update({
+        status: "cancelled",
+        cancelledDate: moment().toISOString(),
+      });
+      // Notify vendor
+      await sendSMS(
+        loan.vendorPhone,
+        `Borrower ${borrowerPhone} has rejected the loan offer of Ksh ${loan.amount}.`
+      );
+      return "loan cancelled";
     }
+  }
 
-    async confirmLoan(loanId, borrowerPhone, confirm) {
-        const loanRef = db.collection('loans').doc(loanId);
-        const loanDoc = await loanRef.get();
-        if (!loanDoc.exists) throw new Error('Loan not found');
-        const loan = loanDoc.data();
+  // Prompt vendor to confirm
+  async requestLoan(borrowerPhone, vendorPhone, amount, dueDate) {
+    const loanRef = db.collection("loans").doc();
+    const loanId = loanRef.id;
+    await loanRef.set({
+      vendorPhone,
+      borrowerPhone,
+      amount,
+      dueDate,
+      status: "pending_vendor_confirmation",
+      createdDate: moment().toISOString(),
+    });
+    // Send SMS to vendor to confirm
+    await sendSMS(
+      vendorPhone,
+      `Loan request: Buyer ${borrowerPhone} requests Ksh ${amount} due on ${moment(
+        dueDate
+      ).format(
+        "YYYY-MM-DD"
+      )}. Reply with *123*${loanId}*1# to approve loan request or *123*${loanId}*2# to reject loan request.`
+    );
+    return loanId;
+  }
 
-        if (loan.borrowerPhone !== borrowerPhone) throw new Error('Unauthorized');
+  // prompt the vendor to confirm the loan request
+  async vendorConfirmLoan(loanId, vendorPhone, confirm) {
+    const loanRef = db.collection("loans").doc(loanId);
+    const loanDoc = await loanRef.get();
+    if (!loanDoc.exists) throw new Error("Loan not found");
+    const loan = loanDoc.data();
 
-        if (confirm) {
-            await loanRef.update({ status: 'active', confirmedDate: moment.toISOString() });
-            // Notify vendor
-            await sendSMS(
-                loan.vendorPhone,
-                `Borrower ${borrowerPhone} has accepted the loan offer for ${loan.amount}.`
-            );
-            return 'Loan Confirmed';
-        } else {
-            await loanRef.update({ status: 'cancelled', cancelledDate: moment().toISOString() });
-            // Notify vendor
-            await sendSMS(
-                loan.vendorPhone,
-                `Borrower ${borrowerPhone} has rejected the loan offer of Ksh ${loan.amount}.`
-            );
-            return 'loan cancelled';
-        }
+    if (loan.vendorPhone != vendorPhone) throw new Error("Unauthorized");
+
+    if (confirm) {
+      await loanRef.update({
+        status: "active",
+        confirmedDate: moment().toISOString(),
+      });
+      // Notify borrower
+      await sendSMS(
+        loan.borrowerPhone,
+        `Vendor ${vendorPhone} has approved your loan request of Ksh ${loan.amount}.`
+      );
+      return "Loan Approved";
+    } else {
+      await loanRef.update({
+        status: "rejected",
+        rejectedDate: moment().toISOString(),
+      });
+      // Notify borrower
+      await sendSMS(
+        loan.borrowerPhone,
+        `Vendor ${vendorPhone} has rejected your loan request of Ksh ${loan.amount}.`
+      );
+      return "Loan rejected";
     }
+  }
 
-    async getLoan(loanId) {
-        const loanRef = db.collection('loans').doc(loanId);
-        const loan = await loanRef.get();
-        if (!loan.exists) {
-            throw new Error('Loan not found');
-        }
-        return { id: loan.id, ...loan.data() };
+  async getLoan(loanId) {
+    const loanRef = db.collection("loans").doc(loanId);
+    const loan = await loanRef.get();
+    if (!loan.exists) {
+      throw new Error("Loan not found");
     }
+    return { id: loan.id, ...loan.data() };
+  }
+
+  
 }
 
 module.exports = new LoanController();

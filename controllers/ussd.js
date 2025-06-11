@@ -22,7 +22,7 @@ class USSDController {
         response = "CON Enter your phone or ID number:";
       } else if (inputs[1] === "2") {
         //Register Flow
-        response = "CON Are you a lender or borrower?\n1. Lender\n2. Buyer";
+        response = "CON Are you a lender or borrower?\n1. Lendor\n2. Buyer";
       }
     }
     // step 3: Registration flow
