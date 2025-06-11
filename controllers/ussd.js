@@ -18,14 +18,14 @@ class USSDController {
     // step 2: User selects Login or Register
     else if (step === 2) {
       if (inputs[1] === "1") {
-        //Login Flow
+        //Login
         response = "CON Enter your phone or ID number:";
       } else if (inputs[1] === "2") {
-        //Register Flow
-        response = "CON Are you a lender or borrower?\n1. Lendor\n2. Buyer";
+        //Register
+        response = "CON Are you a:\n1. Vendor\n2. Buyer";
       }
     }
-    // step 3: Registration flow
+    // Registration flow
     else if (inputs[1] === "2") {
       //vendor ragistration
       if (inputs[2] === "1") {
@@ -33,7 +33,7 @@ class USSDController {
         else if (step === 4) response = "CON Enter your Phone Number:";
         else if (step === 5)
           response =
-            "CON Please Enter Your Payment Mode:\n1. Send Money\n2. Buy Goods\n3. Pochi la Biashara";
+            "CON Choose Payment Mode:\n1. Send Money\n2. Buy Goods\n3. Pochi la Biashara";
         else if (step === 6) response = "CON Enter Business Name:";
         else if (step === 7) response = " CON Set PIN:";
         else if (step === 8) {
@@ -43,14 +43,14 @@ class USSDController {
           const paymentMode = inputs[5];
           const businessName = inputs[6];
           const pin = inputs[7];
-          const type = "vendor";
+          // TODO: Hash PIN before saving
+        //   const type = "vendor";
           await LoanController.registerLender(
             idNumber,
             phone,
             paymentMode,
             businessName,
             pin,
-            type
           );
           response = "END Registration successful. Welcome to Lipa Pole Pole!";
         }
@@ -65,9 +65,10 @@ class USSDController {
           const phone = inputs[3];
           const idNumber = inputs[4];
           const pin = inputs[5];
-          const type = "buyer";
+          // TODO: Hash PIN before  saving
+        //   const type = "buyer";
 
-          await LoanController.registerBorrower(phone, idNumber, pin, type);
+          await LoanController.registerBorrower(phone, idNumber, pin);
           response = "END Registration successful. Welcome to Lipa Pole Pole!";
         }
       }
@@ -123,9 +124,20 @@ class USSDController {
         response = "CON Enter loan period in days:";
       } else if (inputs[4] === "2" && step === 8) {
         //Request Loan logic
+        const borrowerPhone = inputs[2];
+        const vendorPhone = inputs[5];
+        const amount = inputs[6];
+        const period = inputs[7];
+        const dueDate = moment().add(Number(period), "days").toISOString();
+        const loanId = await LoanController.requestLoan(
+            borrowerPhone,
+            vendorPhone,
+            amount,
+            dueDate
+        );
         //TODO: prompt vendor for confirmation
         response = `END Loan request sent to ${
-          user.businessName || inputs[5]
+          vendorPhone
         }. Awaiting confirmation.`;
       }
       // vendor repay loan
