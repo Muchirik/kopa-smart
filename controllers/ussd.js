@@ -44,13 +44,13 @@ class USSDController {
           const businessName = inputs[6];
           const pin = inputs[7];
           // TODO: Hash PIN before saving
-        //   const type = "vendor";
+          //   const type = "vendor";
           await LoanController.registerLender(
             idNumber,
             phone,
             paymentMode,
             businessName,
-            pin,
+            pin
           );
           response = "END Registration successful. Welcome to Lipa Pole Pole!";
         }
@@ -66,7 +66,7 @@ class USSDController {
           const idNumber = inputs[4];
           const pin = inputs[5];
           // TODO: Hash PIN before  saving
-        //   const type = "buyer";
+          //   const type = "buyer";
 
           await LoanController.registerBorrower(phone, idNumber, pin);
           response = "END Registration successful. Welcome to Lipa Pole Pole!";
@@ -130,24 +130,25 @@ class USSDController {
         const period = inputs[7];
         const dueDate = moment().add(Number(period), "days").toISOString();
         const loanId = await LoanController.requestLoan(
-            borrowerPhone,
-            vendorPhone,
-            amount,
-            dueDate
+          borrowerPhone,
+          vendorPhone,
+          amount,
+          dueDate
         );
         //TODO: prompt vendor for confirmation
-        response = `END Loan request sent to ${
-          vendorPhone
-        }. Awaiting confirmation.`;
+        response = `END Loan request sent to ${vendorPhone}. Awaiting confirmation.`;
       }
-      // vendor repay loan
+      // Repay Loan (vendor or buyer)
       else if (
-        ((inputs[4] === "3" && step === 5) && inputs[1] === "1") || //Vendor: Repay Loan
-        ((inputs[4] === "2" && step ===5) && inputs[1] === "1") // Buyer: Repay Loan
-    ) {
+        (inputs[4] === "3" && step === 5 && inputs[1] === "1") || //Vendor: Repay Loan
+        (inputs[4] === "2" && step === 5 && inputs[1] === "1") // Buyer: Repay Loan
+      ) {
         const userIdOrPhone = inputs[2];
         // only show loans that are active or late
-        const loans = await LoanController.getLoansByUser(userIdOrPhone, ["active", "late"]);
+        const loans = await LoanController.getLoansByUser(userIdOrPhone, [
+          "active",
+          "late",
+        ]);
         if (!loans.length) {
           response = "END No loans to repay.";
         } else {
@@ -159,90 +160,86 @@ class USSDController {
           });
         }
       }
-      // Buyer Request Loan
-      else if (inputs[4] === "1" && step === 5) {
-        response = "CON Enter vendor phone/till:";
-      } else if (inputs[4] === "1" && step === 6) {
-        response = "CON Enter Amount:";
-      } else if (inputs[4] === "1" && step === 7) {
-        response = "CON Enter Loan Period (days):";
-      } else if (inputs[4] === "1" && step === 8) {
-        //Request loan logic
-        //TODO Prompt vendor for confirmation
-        response = "END Loan request sent to vendor.";
-      }
-      //Buyer: Repay Loan
-      else if (inputs[4] === "2" && step === 5) {
-        //List loans to repay
-        const userIdOrPhone = inputs[2];
-        const loans = await LoanController.getLoansByUser(userIdOrPhone);
-        if (!loans.length) {
-          response = "END No loans to repay.";
-        } else {
-          response = "CON Select loan to repay:\n";
-          loans.forEach((loan, i) => {
-            response += `${i + 1}. ${loan.id} Ksh ${loan.amount} Due:${moment(
-              loan.dueDate
-            ).format("YYYY-MM-DD")}\n`;
-          });
-        }
-      }
-      //Repay Loan - select and confirm
-      else if ((inputs[4] === "2" || inputs[4] === "3") && step === 6) {
+      // Repay Loan - select and confirm
+      else if (
+        (inputs[4] === "3" && step === 6 && inputs[1] === "1") || // Vendor: Repay Loan
+        (inputs[4] === "2" && step === 6 && inputs[1] === "1") // Buyer: Repay Loan
+      ) {
         const userIdOrPhone = inputs[2];
         const loanIndex = Number(inputs[5]) - 1;
-        const loans = await LoanController.getLoansByUser(userIdOrPhone);
+        const loans = await LoanController.getLoansByUser(userIdOrPhone, [
+          "active",
+          "late",
+        ]);
         if (!loans[loanIndex]) {
-          response = "END Invalid loan selection.";
+          response = "END Invalid loan selection";
         } else {
           const loan = loans[loanIndex];
-          //Initiate STK push
           await LoanController.initiateSTKPush(
             phoneNumber,
             loan.amount,
-            `Repayment for Loan ID: ${loan.id}`
+            `Repayment for loan ID: ${loan.id}`
           );
           response = `END Payment of Ksh ${loan.amount} initiated. Complete on your M-Pesa app.`;
         }
-        // Return the response to the USSD gateway
-        response = `BEGIN ${response}`;
-        // Ensure the response starts with 'BEGIN' for USSD
-        if (!response.startsWith("BEGIN")) {
-          response = `BEGIN ${response}`;
-        }
-        // Return the response
-        console.log(`USSD Response: ${response}`);
-
-        return response;
       }
-      // Vendor: View Loans (option 4 after login)
-      //Buyer: View Lonas (option 3 after login)
+
+      // Buyer Request Loan
+      //   else if (inputs[4] === "1" && step === 5) {
+      //     response = "CON Enter vendor phone/till:";
+      //   } else if (inputs[4] === "1" && step === 6) {
+      //     response = "CON Enter Amount:";
+      //   } else if (inputs[4] === "1" && step === 7) {
+      //     response = "CON Enter Loan Period (days):";
+      //   } else if (inputs[4] === "1" && step === 8) {
+      //Request loan logic
+      //TODO Prompt vendor for confirmation
+      // response = "END Loan request sent to vendor.";
+      //   }
+
+
+      // View Loans (vendor 4, buyer: 3)
       else if (
-        (user.type === "vendor" && inputs[4] === "4" && step === 5) ||
-        (user.type === "buyer" && inputs[4] === "3" && step === 5)
+        (inputs[4] === "4" && step === 5) || // Vendor
+        (inputs[4] === "3" && step === 5) // Buyer
       ) {
         const userIdOrPhone = inputs[2];
-        const loans = await LoanController.getLoansByUser(userIdOrPhone);
+        // Show all loans except cancelled/rejected
+        const loans = await LoanController.getLoansByUser(userIdOrPhone,
+            [
+                "active",
+                "late",
+                "pending_borrower_confirmation",
+                "pending_vendor_confirmation",
+                "paid"
+            ]
+        );
         if (!loans.length) {
           response = "END No loans found for your account.";
         } else {
           response = "CON Your Loans:\n";
           loans.forEach((loan, index) => {
-            response += `${index + 1}. ${loan.amount}- Due: ${moment(
+            response += `${index + 1}. Ksh ${loan.amount}- Due: ${moment(
               loan.dueDate
             ).format("YYYY-MM-DD")}\n`;
           });
           response += "Reply with the number to view details.";
         }
       }
-      //Handle loan selection to show details or offer repayment
+      // View Loan Details
       else if (
-        (user.type === "vendor" && inputs[4] === "4" && step === 6) ||
-        (user.type === "buyer" && inputsp[4] === "3" && step === 6)
+        ((inputs[4] === "4" && step === 6) && inputs[1] === "1") || // Vendor
+        ((inputs[4] === "3" && step === 6) && inputs[1] === "1") // Buyer
       ) {
         const userIdOrPhone = inputs[2];
-        const loans = LoanController.getLoansByUser(userIdOrPhone);
         const loanIndex = Number(inputs[5]) - 1;
+        const loans = await LoanController.getLoansByUser(userIdOrPhone, [
+            "active",
+            "late",
+            "pending_borrower_confirmation",
+            "pending_vendor_confirmation",
+            "paid"
+        ]);
         if (!loans[loanIndex]) {
           response = "END Invalid loan selection.";
         } else {
