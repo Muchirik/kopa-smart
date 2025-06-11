@@ -162,10 +162,17 @@ class LoanController {
   }
 
   // Query for loans where user is either vendor or the buyer
-  async getLoansByUser(phoneOrId) {
+  async getLoansByUser(phoneOrId, statusArray = null) {
     const loansRef = db.collection("loans");
     const vendorQuery = loansRef.where("vendorPhone", "==", phoneOrId);
     const borrowerQuery = loansRef.where("borrowerPhone", "==", phoneOrId);
+
+
+    if (statusArray && statusArray.length) {
+        vendorQuery = vendorQuery.where("status", "in", statusArray);
+        borrowerQuery = borrowerQuery.where("status", "in", statusArray);
+    }
+
 
     const [vendorSnap, borrowerSnap] = await Promise.all([
       vendorQuery.get(),
