@@ -138,6 +138,7 @@ class USSDController {
         //TODO: prompt vendor for confirmation
         response = `END Loan request sent to ${vendorPhone}. Awaiting confirmation.`;
       }
+
       // Repay Loan (vendor or buyer)
       else if (
         (inputs[4] === "3" && step === 5 && inputs[1] === "1") || //Vendor: Repay Loan
@@ -185,17 +186,28 @@ class USSDController {
       }
 
       // Buyer Request Loan
-      //   else if (inputs[4] === "1" && step === 5) {
-      //     response = "CON Enter vendor phone/till:";
-      //   } else if (inputs[4] === "1" && step === 6) {
-      //     response = "CON Enter Amount:";
-      //   } else if (inputs[4] === "1" && step === 7) {
-      //     response = "CON Enter Loan Period (days):";
-      //   } else if (inputs[4] === "1" && step === 8) {
-      //Request loan logic
-      //TODO Prompt vendor for confirmation
-      // response = "END Loan request sent to vendor.";
-      //   }
+        else if (user.type === "buyer" && inputs[4] === "1" && step === 5) {
+          response = "CON Enter vendor phone/till:";
+        } else if (user.type === "buyer" && inputs[4] === "1" && step === 6) {
+          response = "CON Enter Amount:";
+        } else if (user.type === "buyer" && inputs[4] === "1" && step === 7) {
+          response = "CON Enter Loan Period (days):";
+        } else if (user.type === "buyer" && inputs[4] === "1" && step === 8) {
+        // Request loan logic
+        const borrowerPhone = inputs[2];
+        const vendorPhone = inputs[5];
+        const amount = inputs[6];
+        const period = inputs[7];
+        const dueDate = moment().add(Number(period), "days").toISOString();
+        const loanId = await LoanController.requestLoan(
+            borrowerPhone,
+            vendorPhone,
+            amount,
+            dueDate
+        );
+        // TODO Prompt vendor for confirmation
+        response = `END Loan request sent to ${vendorPhone}. Awaiting confirmation.`;
+        }
 
       // View Loans (vendor 4, buyer: 3)
       else if (
