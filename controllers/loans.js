@@ -3,6 +3,7 @@ const { initiateSTKPush } = require('../services/mpesa');
 const db = require('../config/firebase');
 const { getAuthToken } = require('../config/daraja');
 const moment = require('moment');
+const { sendSMS } = require('../services/sms');
 
 class LoanController {
     async applyLateFee(loanId) {
@@ -33,18 +34,25 @@ class LoanController {
 
     async createLoan(vendorPhone, borrowerPhone, amount, dueDate) {
         const loanRef = db.collection('loans').doc();
+        loanId = loanRef.id;
         await loanRef.set({
             vendorPhone,
             borrowerPhone,
             amount,
             originalAmount: amount,
             dueDate: moment(dueDate).toISOString(),
-            status: 'active',
+            status: 'pending_borrower_confirmation',
             createdDate: moment().toISOString()
         });
+        //send sms to borrower to confirm
+        await sendSMS(
+            borrowerPhone,
+            `You have a loan offer of Ksh ${amount} due on ${moment(dueDate).format('YYYY-MM-DD')} from vendor ${vendorPhone}. Reply with *123*${loanId}*1# to accept or *123*${loanId}*2# to reject.`
+        );
 
-        return loanRef.id;
+        return loanId;
     }
+
 
     async getLoan(loanId) {
         const loanRef = db.collection('loans').doc(loanId);

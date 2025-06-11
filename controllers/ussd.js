@@ -112,7 +112,6 @@ class USSDController {
           dueDate
         );
         //TODO: Send prompt to borrower for confirmation
-        
         response = `END Loan offer sent to borrower for Ksh ${amount}. Awaiting confirmation.`;
       }
       //vendor Request Loan (from another vendor)
