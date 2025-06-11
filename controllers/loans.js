@@ -161,7 +161,33 @@ class LoanController {
     return { id: loan.id, ...loan.data() };
   }
 
-  
+  // Query for loans where user is either vendor or the buyer
+  async getLoansByUser(phoneOrId) {
+    const loansRef = db.collection("loans");
+    const vendorQuery = loansRef.where("vendorPhone", "==", phoneOrId);
+    const borrowerQuery = loansRef.where("borrowerPhone", "==", phoneOrId);
+
+    const [vendorSnap, borrowerSnap] = await Promise.all([
+      vendorQuery.get(),
+      borrowerQuery.get(),
+    ]);
+
+    const loans = [];
+
+    vendorSnap.forEach((doc) => {
+      loans.push({ id: doc.id, ...doc.data() });
+    });
+    borrowerSnap.forEach((doc) => {
+      // Avoid duplicatde if user is both vendor and borrower in the same loan
+      if (!loans.find((l) => l.id === doc.id)) {
+        loans.push({ id: doc.id, ...doc.data() });
+      }
+    });
+    // Sort by due date (earliest first)
+    loans.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+    return loans;
+  }
 }
 
 module.exports = new LoanController();
