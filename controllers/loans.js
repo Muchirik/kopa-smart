@@ -53,6 +53,32 @@ class LoanController {
         return loanId;
     }
 
+    async confirmLoan(loanId, borrowerPhone, confirm) {
+        const loanRef = db.collection('loans').doc(loanId);
+        const loanDoc = await loanRef.get();
+        if (!loanDoc.exists) throw new Error('Loan not found');
+        const loan = loanDoc.data();
+
+        if (loan.borrowerPhone !== borrowerPhone) throw new Error('Unauthorized');
+
+        if (confirm) {
+            await loanRef.update({ status: 'active', confirmedDate: moment.toISOString() });
+            // Notify vendor
+            await sendSMS(
+                loan.vendorPhone,
+                `Borrower ${borrowerPhone} has accepted the loan offer for ${loan.amount}.`
+            );
+            return 'Loan Confirmed';
+        } else {
+            await loanRef.update({ status: 'cancelled', cancelledDate: moment().toISOString() });
+            // Notify vendor
+            await sendSMS(
+                loan.vendorPhone,
+                `Borrower ${borrowerPhone} has rejected the loan offer of Ksh ${loan.amount}.`
+            );
+            return 'loan cancelled';
+        }
+    }
 
     async getLoan(loanId) {
         const loanRef = db.collection('loans').doc(loanId);
