@@ -1,6 +1,6 @@
 //safaricom daraja config
 const axios = require('axios');
-const btoa = require('btoa');
+// const btoa = require('btoa');
 
 const getAuthToken = async () => {
     const auth = Buffer.from

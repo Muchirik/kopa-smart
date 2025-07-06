@@ -44,7 +44,7 @@ const initiateSTKPush = async (phone, amount, accountReference) => {
             PartyA: formattedPhone, // Ensure phone number is in the correct format
             PartyB: '174379',
             PhoneNumber: phone,
-            CallBackURL: 'https://your-calllback-url.com', // Replace with actual callback URL
+            CallBackURL: process.env.MPESA_CALLBACK_URL, // Replace with actual callback URL
             // For production, use 'https://api.safaricom.co.ke/mpesa/c2b/v1/safaricom-safaricom-callback'
             AccountReference: accountReference,
             TransactionDesc: 'Lipa Pole Pole Repayment'

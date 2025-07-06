@@ -1,10 +1,10 @@
-# Lipa Pole Pole - BNPL for Kenyan Retailers 🇰🇪
+# Kopa Smart - BNPL for Kenyan Retailers 🇰🇪
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![MPesa Integration](https://img.shields.io/badge/Powered%20by-Safaricom%20Daraja-blue)](https://developer.safaricom.co.ke)
 ![USSD Accessible](https://img.shields.io/badge/USSD-Accessible-brightgreen)
 
-> "Digital Mikokoteni" - Transforming informal credit through M-Pesa automation
+> "Digital Mtaani" - Transforming informal credit through M-Pesa automation
 
 ## Table of Contents
 
@@ -64,10 +64,10 @@ graph TD
 
 ```sh
 # Clone repository
-git clone https://github.com/your-repo/lipa-pole-pole.git
+git clone https://github.com/Muchirik/kopa-smart.git
 
 # Install dependencies
-cd lipa-pole-pole
+cd kopa-smart
 npm install
 
 # Set up environment

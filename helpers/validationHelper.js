@@ -12,7 +12,7 @@ function normalizePhone(phone) {
 }
 
 function isValidIdNumber(id) {
-    return /^d{6,10}$/.test(id);
+    return /^\d{6,10}$/.test(id);
 }
 
 function isValidPin(pin) {

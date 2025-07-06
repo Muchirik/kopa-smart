@@ -1,9 +1,22 @@
 # dotenv environment variable files
 .env
+.env.*
+!.env.example
 .env.development.local
 .env.test.local
 .env.production.local
 .env.local
+
+# Firebase Service Account
+firebase_account_service.json
+/config/firebase_account_service.json
+C:\MyApps\lipa-pole-pole\firebase_account_service.json
+
+# Qodo local files
+.qodo
+
+# Africa's Talking or other secret keys
+at_service_account
 
 # Logs
 logs
@@ -12,6 +25,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
 # Runtime data
 pids
 *.pid

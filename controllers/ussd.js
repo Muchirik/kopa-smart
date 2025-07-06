@@ -5,20 +5,24 @@ const { sendSMS } = require("../services/sms");
 const db = require("../config/firebase");
 const moment = require("moment");
 const {
-    isValidPhone,
-    normalizePhone,
-    isValidIdNumber,
-    isValidPin,
-    isValidAmount,
-    isValidPeriod,
+  isValidPhone,
+  normalizePhone,
+  isValidIdNumber,
+  isValidPin,
+  isValidAmount,
+  isValidPeriod,
 } = require("../helpers/validationHelper");
+// const { response } = require("../server");
 
 class USSDController {
   async processInput(phoneNumber, text) {
+    console.log("USSD input:", { phoneNumber, text });
+    let response = "";
     try {
       const inputs = text.split("*");
-      let response = "";
       const step = inputs.length;
+
+      console.log("inputs:", inputs, "step:", step);
 
       //Step 1: Initial USSD request - Main Menu
       if (step === 1) {
@@ -40,21 +44,18 @@ class USSDController {
         if (inputs[2] === "1") {
           if (step === 3) response = "CON Enter ID Number:";
           else if (step === 3 && !isValidIdNumber(inputs[3])) {
-              response = "END Invalid ID number.";
-          }
-          else if (step === 4 ) response = "CON Enter your Phone Number:";
+            response = "END Invalid ID number.";
+          } else if (step === 4) response = "CON Enter your Phone Number:";
           else if (step === 4 && !isValidPhone(inputs[4])) {
-              response = "END Invalid phone number format.";
-          }
-          else if (step === 5)
+            response = "END Invalid phone number format.";
+          } else if (step === 5)
             response =
               "CON Choose Payment Mode:\n1. Send Money\n2. Buy Goods\n3. Pochi la Biashara";
           else if (step === 6) response = "CON Enter Business Name:";
           else if (step === 7) response = " CON Set PIN:";
           else if (step === 7 && !isValidPin(inputs[7])) {
-              response = "END PIN must be 4 digits.";
-          }
-          else if (step === 8) {
+            response = "END PIN must be 4 digits.";
+          } else if (step === 8) {
             //save vendor registration
             const idNumber = inputs[3];
             const phone = normalizePhone(inputs[4]);
@@ -69,32 +70,30 @@ class USSDController {
               businessName,
               pin
             );
-            response = "END Registration successful. Welcome to Lipa Pole Pole!";
+            response =
+              "END Registration successful. Welcome to Lipa Pole Pole!";
           }
         }
         // Buyer Registration
         else if (inputs[2] === "2") {
           if (step === 3) response = "CON Enter Phone Number:";
-          else if (step === 3 && !isValidPhone(inputs[3]))
-          {
-              response = "END Invalid phone number format."
-          }
-          else if (step === 4) response = "CON Enter ID Number:";
+          else if (step === 3 && !isValidPhone(inputs[3])) {
+            response = "END Invalid phone number format.";
+          } else if (step === 4) response = "CON Enter ID Number:";
           else if (step === 4 && !isValidIdNumber(inputs[4])) {
-              response = "END Invalid ID number.";
-          }
-          else if (step === 5) response = "CON Set PIN:";
+            response = "END Invalid ID number.";
+          } else if (step === 5) response = "CON Set PIN:";
           else if (step === 5 && !isValidPin(inputs[5])) {
-              response = "END PIN must be 4 digits.";
-          }
-          else if (step === 6) {
+            response = "END PIN must be 4 digits.";
+          } else if (step === 6) {
             // Save buyer registration data
             const phone = normalizePhone(inputs[3]);
             const idNumber = inputs[4];
             const pin = inputs[5];
 
             await LoanController.registerBorrower(phone, idNumber, pin);
-            response = "END Registration successful. Welcome to Lipa Pole Pole!";
+            response =
+              "END Registration successful. Welcome to Lipa Pole Pole!";
           }
         }
       }
@@ -102,12 +101,14 @@ class USSDController {
       else if (inputs[1] === "1") {
         if (step === 3) {
           response = "CON Enter PIN:";
-        }
-        else if (step === 4) {
+        } else if (step === 4) {
           //Authenticate user
           const userIdOrPhone = inputs[2];
           const pin = inputs[3];
-          const user = await LoanController.authenticateUser(userIdOrPhone, pin);
+          const user = await LoanController.authenticateUser(
+            userIdOrPhone,
+            pin
+          );
           if (!user) {
             response = "END Invalid credentials. Please try again.";
           } else if (user.type === "vendor") {
@@ -121,20 +122,29 @@ class USSDController {
         //vendor Give Loan
         else if (inputs[4] === "1" && step === 5) {
           response = "CON Enter borrower phone number:";
-        } else if (inputs[4] === "1" && step === 5 && !isValidPhone(inputs[5])) {
+        } else if (
+          inputs[4] === "1" &&
+          step === 5 &&
+          !isValidPhone(inputs[5])
+        ) {
           response = "END Invalid phone number format.";
-        }
-        else if (inputs[4] === "1" && step === 6) {
+        } else if (inputs[4] === "1" && step === 6) {
           response = "CON Enter loan amount:";
-        } else if (inputs[4] === "1" && step === 6 && !isValidAmount(inputs[6])) {
+        } else if (
+          inputs[4] === "1" &&
+          step === 6 &&
+          !isValidAmount(inputs[6])
+        ) {
           response = "END Amount must be between 100 and 1,000,000.";
-        }
-        else if (inputs[4] === "1" && step === 7) {
+        } else if (inputs[4] === "1" && step === 7) {
           response = "Enter loan period (days):";
-        } else if (inputs[4] === "1" && step === 7 && !isValidPeriod(inputs[7])) {
+        } else if (
+          inputs[4] === "1" &&
+          step === 7 &&
+          !isValidPeriod(inputs[7])
+        ) {
           response = "END Period must be between 1 and 365 days.";
-        }
-        else if (inputs[4] === "1" && step === 8) {
+        } else if (inputs[4] === "1" && step === 8) {
           // create loan and prompt borrower for confirmation
           const vendorIdOrPhone = inputs[2];
           const borrowerPhone = normalizePhone(inputs[5]);
@@ -154,15 +164,21 @@ class USSDController {
           response = "CON Enter vendor phone/till:";
         } else if (inputs[4] === "2" && step === 6) {
           response = "CON Enter amount:";
-        } else if (inputs[4] === "2" && step === 6 && !isValidAmount(inputs[6])) {
+        } else if (
+          inputs[4] === "2" &&
+          step === 6 &&
+          !isValidAmount(inputs[6])
+        ) {
           response = "END Amount must be between 100 and 1,000,000.";
-        }
-        else if (inputs[4] === "2" && step === 7) {
+        } else if (inputs[4] === "2" && step === 7) {
           response = "CON Enter loan period in days:";
-        } else if (inputs[4] === "2" && step === 7 && !isValidPeriod(inputs[7])) {
+        } else if (
+          inputs[4] === "2" &&
+          step === 7 &&
+          !isValidPeriod(inputs[7])
+        ) {
           response = "END Period must be between 1 and 365 days.";
-        }
-        else if (inputs[4] === "2" && step === 8) {
+        } else if (inputs[4] === "2" && step === 8) {
           //Request Loan logic
           const borrowerPhone = inputs[2];
           const vendorPhone = inputs[5];
@@ -225,19 +241,27 @@ class USSDController {
         }
 
         // Buyer Request Loan
-          else if (user.type === "buyer" && inputs[4] === "1" && step === 5) {
-            response = "CON Enter vendor phone/till:";
-          } else if (user.type === "buyer" && inputs[4] === "1" && step === 6) {
-            response = "CON Enter Amount:";
-          } else if (user.type === "buyer" && inputs[4] === "1" && step === 6 && !isValidAmount(inputs[6])) {
-              response = "END Amount must be between 100 and 1,000,000.";
-          }
-          else if (user.type === "buyer" && inputs[4] === "1" && step === 7) {
-            response = "CON Enter Loan Period (days):";
-          } else if (user.type === "buyer" && inputs[4] === "1" && step === 7 && !isValidPeriod(inputs[7])) {
-              response = "END Period must be between 1 and 365 days."
-          }
-          else if (user.type === "buyer" && inputs[4] === "1" && step === 8) {
+        else if (user.type === "buyer" && inputs[4] === "1" && step === 5) {
+          response = "CON Enter vendor phone/till:";
+        } else if (user.type === "buyer" && inputs[4] === "1" && step === 6) {
+          response = "CON Enter Amount:";
+        } else if (
+          user.type === "buyer" &&
+          inputs[4] === "1" &&
+          step === 6 &&
+          !isValidAmount(inputs[6])
+        ) {
+          response = "END Amount must be between 100 and 1,000,000.";
+        } else if (user.type === "buyer" && inputs[4] === "1" && step === 7) {
+          response = "CON Enter Loan Period (days):";
+        } else if (
+          user.type === "buyer" &&
+          inputs[4] === "1" &&
+          step === 7 &&
+          !isValidPeriod(inputs[7])
+        ) {
+          response = "END Period must be between 1 and 365 days.";
+        } else if (user.type === "buyer" && inputs[4] === "1" && step === 8) {
           // Request loan logic
           const borrowerPhone = inputs[2];
           const vendorPhone = inputs[5];
@@ -245,13 +269,13 @@ class USSDController {
           const period = inputs[7];
           const dueDate = moment().add(Number(period), "days").toISOString();
           const loanId = await LoanController.requestLoan(
-              borrowerPhone,
-              vendorPhone,
-              amount,
-              dueDate
+            borrowerPhone,
+            vendorPhone,
+            amount,
+            dueDate
           );
           response = `END Loan request sent to ${vendorPhone}. Awaiting confirmation.`;
-          }
+        }
 
         // View Loans (vendor 4, buyer: 3)
         else if (
@@ -320,8 +344,8 @@ class USSDController {
           const userIdOrPhone = inputs[2];
           const loanIndex = Number(inputs[5]) - 1;
           const loans = await LoanController.getLoansByUser(userIdOrPhone, [
-              "active",
-              "late"
+            "active",
+            "late",
           ]);
           if (!loans[loanIndex]) {
             response = "END Invalid loan selection.";
@@ -338,23 +362,23 @@ class USSDController {
         }
         // Handle Back Option from Loan Details
         else if (
-          (
-              ((inputs[4] === "4" &&
-              step === 7 &&
-              inputs[6] === "2") && inputs[1] === "1") || // Vendor
-          ((inputs[4] === "3" &&
+          (inputs[4] === "4" &&
             step === 7 &&
-            inputs[6] === "2") && inputs[1] === "1") // Buyer
-          )
+            inputs[6] === "2" &&
+            inputs[1] === "1") || // Vendor
+          (inputs[4] === "3" &&
+            step === 7 &&
+            inputs[6] === "2" &&
+            inputs[1] === "1") // Buyer
         ) {
           // Go back to loans list
           const userIdOrPhone = inputs[2];
           const loans = await LoanController.getLoansByUser(userIdOrPhone, [
-              "active",
-              "late",
-              "pending_borrower_confirmation",
-              "pending_vendor_confirmation",
-              "paid"
+            "active",
+            "late",
+            "pending_borrower_confirmation",
+            "pending_vendor_confirmation",
+            "paid",
           ]);
           response = "CON Your loans:\n";
           loans.forEach((loan, index) => {
@@ -377,19 +401,26 @@ class USSDController {
           const confirm = inputs[3] === "1";
           // Try borrower confirmation first
           try {
-              const result  = await LoanController.confirmLoan(loanId, phoneNumber, confirm);
-              response = `END ${result}`;
+            const result = await LoanController.confirmLoan(
+              loanId,
+              phoneNumber,
+              confirm
+            );
+            response = `END ${result}`;
           } catch (err) {
-              // If not borrower, try vendor confirmation
-              try {
-                  const result = await LoanController.vendorConfirmLoan(loanId, phoneNumber, confirm);
-                  response = `END ${result}`;
-              } catch (err2) {
-                  response = "END Invalid confirmation or unauthorized.";
-              }
+            // If not borrower, try vendor confirmation
+            try {
+              const result = await LoanController.vendorConfirmLoan(
+                loanId,
+                phoneNumber,
+                confirm
+              );
+              response = `END ${result}`;
+            } catch (err2) {
+              response = "END Invalid confirmation or unauthorized.";
+            }
           }
-        }
-        else {
+        } else {
           response = "END Invalid input. Please try again.";
         }
 
@@ -397,17 +428,21 @@ class USSDController {
         if (response.startsWith("END")) {
           try {
             await sendSMS(phoneNumber, response.replace("END", "").trim());
+            console.log("USSD response:", response);
           } catch (smsErr) {
-            console.log("Sms send error: " , smsErr);
+            console.log("Sms send error: ", smsErr);
           }
         }
-
-        return response;
       }
     } catch (err) {
       console.error("USSD error:", err);
-      return "END Sorry, an error occured. Please try again later.";
+      response = "END Sorry, an error occured. Please try again later.";
     }
+    if (!response) {
+      response = "END Invalid input. please try again.";
+    }
+    console.log("Returning response: ", response)
+    return response;
   }
 }
 

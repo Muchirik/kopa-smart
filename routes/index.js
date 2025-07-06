@@ -4,20 +4,34 @@ const router = express.Router();
 const { Timestamp } = require('firebase-admin/firestore');
 const db = require('../config/firebase');
 
+
+
+router.get('/', (req, res) => {
+  res.send('Lipa Pole Pole API is running!');
+});
+
+
 // USSD Endpoint
 //const  ussdRouter = express.Router();
 // This endpoint will handle USSD requests
 
 router.post('/ussd', async (req, res) => {
+    console.log("Raw body:", req.body);
     const { phoneNumber, text } = req.body;
-    const response = await USSDController.processInput(phoneNumber, text);
-    res.send(response);
+    try {
+      const response = await USSDController.processInput(phoneNumber, text);
+      console.log("Route response:", response);
+      res.send(response);
+    } catch (err) {
+      console.error("USSD route error: ", err);
+      res.status(500).send("END Sorry, an error occured. Please try again later.");
+    }
 });
 
 // M-Pesa Callback Endpoint
 //const mpesaRouter = express.Router();
 router.post('/mpesa/callback', async (req, res) => {
-  // Handle the callback from M-Pesa STK Push here
+  // Handle the callback from M-Pesa STK Push
   // This endpoint will receive the callback data from M-Pesa after a successful STK Push
   // log the response or save it to database
   console.log("M-Pesa Callback:", req.body);

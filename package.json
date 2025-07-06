@@ -1,5 +1,5 @@
 {
-  "name": "lipa-pole-pole",
+  "name": "kopa-smart",
   "version": "1.0.0",
   "description": "A USSD loan system",
   "main": "index.js",
@@ -8,15 +8,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Muchirik/lipa-pole-pole.git"
+    "url": "git+https://github.com/Muchirik/kopa-smart.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Muchirik/lipa-pole-pole/issues"
+    "url": "https://github.com/Muchirik/kopa-smart/issues"
   },
-  "homepage": "https://github.com/Muchirik/lipa-pole-pole#readme",
+  "homepage": "https://github.com/Muchirik/kopa-smart#readme",
   "dependencies": {
     "africastalking": "^0.7.3",
     "axios": "^1.9.0",
@@ -24,6 +24,7 @@
     "body-parser": "^2.2.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "firebase": "^11.10.0",
     "firebase-admin": "^13.4.0",
     "moment": "^2.30.1"
   }
